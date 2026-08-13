@@ -33,10 +33,11 @@ cp .env.example .env          # set SEARCH_PASSWORD
 venv/bin/uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000/. To rebuild the committed Tailwind stylesheet:
+Open http://127.0.0.1:8000/. To rebuild the committed Tailwind stylesheet (vendored
+CLI at `./tailwindcss`):
 
 ```bash
-/var/www/tailwindcss \
+./tailwindcss \
   -i app/static/css/input.css -o app/static/css/app.css --minify
 ```
 
