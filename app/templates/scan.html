@@ -119,43 +119,43 @@ function scanWidget() {
 <section class="max-w-3xl mx-auto" x-data="scanWidget()" x-init="init()">
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="min-w-0">
-      <p class="eyebrow mb-1">
-        <a href="{{ prefix }}/" class="hover:text-signal transition">← all scans</a>
+      <p class="text-sm text-slate-500 mb-1">
+        <a href="{{ prefix }}/" class="hover:text-indigo-600 transition">← all scans</a>
       </p>
-      <h2 class="text-2xl sm:text-3xl font-bold font-mono text-ink truncate">{{ scan['username'] }}</h2>
-      <p class="mt-1 font-mono text-xs text-inkdim">
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 truncate">{{ scan['username'] }}</h2>
+      <p class="mt-1 text-xs text-slate-500">
         {{ scan['scope'] }} scope · <span x-text="total"></span> sites · scan #{{ scan['id'] }} ·
         <span data-ts="{{ scan['created_at'] }}"></span>
       </p>
     </div>
-    <span class="text-[11px] px-2.5 py-1 rounded font-mono uppercase tracking-wide shrink-0"
+    <span class="text-[11px] px-2.5 py-1 rounded font-medium uppercase tracking-wide shrink-0"
       :class="{
-        'bg-signaldim text-signal': status === 'done',
-        'bg-alertdim text-alert': status === 'error' || status === 'cancelled',
-        'bg-amberdim text-amber': status === 'running' || status === 'queued'
+        'bg-indigo-100 text-indigo-700': status === 'done',
+        'bg-rose-100 text-rose-700': status === 'error' || status === 'cancelled',
+        'bg-slate-100 text-slate-600': status === 'running' || status === 'queued'
       }" x-text="status"></span>
   </div>
 
   <div x-cloak x-show="status === 'error' || status === 'cancelled'"
-    class="mt-4 rounded-md border border-alert/40 bg-alertdim px-4 py-3 text-sm font-mono text-alert">
+    class="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
     <span x-show="status === 'error'">scan failed — <span x-text="error"></span></span>
     <span x-show="status === 'cancelled'">scan cancelled by operator.</span>
   </div>
 
-  <div x-cloak x-show="!finished()" class="mt-6 panel p-5">
+  <div x-cloak x-show="!finished()" class="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm p-5">
     <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
       <span class="flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-amber motion-safe:animate-blink"></span>
-        <span class="font-mono text-xs uppercase tracking-wide text-amber"
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 motion-safe:animate-blink"></span>
+        <span class="text-xs font-semibold uppercase tracking-wide text-indigo-700"
           x-text="cancelling ? 'cancelling…' : 'scanning…'"></span>
       </span>
       <div class="flex items-center gap-3">
-        <span class="font-mono text-xs text-inkdim">
+        <span class="text-xs text-slate-500">
           <span x-text="processed"></span>/<span x-text="total"></span> ·
           <span x-text="percent() + '%'"></span>
         </span>
         {% if is_admin %}
-        <button type="button" @click="cancel()" :disabled="cancelling" class="btn-danger">
+        <button type="button" @click="cancel()" :disabled="cancelling" class="rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
           <span x-show="!cancelling">Cancel</span>
           <span x-cloak x-show="cancelling">Cancelling…</span>
         </button>
@@ -163,63 +163,64 @@ function scanWidget() {
       </div>
     </div>
 
-    <div class="relative h-2 rounded-full bg-panel2 overflow-hidden">
-      <div class="h-full bg-signal transition-all duration-500" :style="'width:' + percent() + '%'"></div>
-      <div class="absolute inset-y-0 w-1/6 bg-gradient-to-r from-transparent via-signal/70 to-transparent motion-safe:animate-sweep"></div>
+    <div class="relative h-2 rounded-full bg-slate-100 overflow-hidden">
+      <div class="h-full bg-indigo-600 transition-all duration-500" :style="'width:' + percent() + '%'"></div>
+      <div class="absolute inset-y-0 w-1/6 bg-gradient-to-r from-transparent via-indigo-400/70 to-transparent motion-safe:animate-sweep"></div>
     </div>
 
-    <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-inkdim">
-      <span>elapsed <span class="text-ink" x-text="formatDuration(elapsedSeconds())"></span></span>
-      <span x-show="eta() !== null">eta <span class="text-ink" x-text="formatDuration(eta())"></span></span>
-      <span x-show="rate() !== null"><span class="text-ink" x-text="rate()"></span> sites/s</span>
+    <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-slate-500">
+      <span>elapsed <span class="text-slate-900" x-text="formatDuration(elapsedSeconds())"></span></span>
+      <span x-show="eta() !== null">eta <span class="text-slate-900" x-text="formatDuration(eta())"></span></span>
+      <span x-show="rate() !== null"><span class="text-slate-900" x-text="rate()"></span> sites/s</span>
     </div>
   </div>
 
   <div class="mt-8">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-      <h3 class="eyebrow">Found profiles (<span x-text="found.length"></span>)</h3>
+      <h3 class="text-xs font-semibold uppercase tracking-widest text-slate-500">Found profiles (<span x-text="found.length"></span>)</h3>
       <div class="flex items-center gap-2">
-        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.json" class="btn-ghost">Export JSON</a>
-        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.csv" class="btn-ghost">Export CSV</a>
-        <button type="button" @click="copyLink()" class="btn-ghost" x-text="copied ? 'Copied' : 'Copy link'"></button>
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.json" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Export JSON</a>
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.csv" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Export CSV</a>
+        <button type="button" @click="copyLink()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600" x-text="copied ? 'Copied' : 'Copy link'"></button>
       </div>
     </div>
 
     <div x-show="found.length > 0" x-cloak class="mb-3 flex flex-wrap items-center gap-2">
-      <div class="flex items-center rounded-md border border-line bg-void px-2 flex-1 min-w-[160px] max-w-xs">
-        <span class="font-mono text-inkfaint text-xs">/</span>
+      <div class="flex items-center rounded-lg border border-slate-300 bg-white px-2 flex-1 min-w-[160px] max-w-xs">
+        <span class="text-slate-400 text-xs">/</span>
         <input type="text" x-model="query" placeholder="filter site, tag, id…"
-          class="w-full bg-transparent px-2 py-1.5 text-xs font-mono text-ink placeholder:text-inkfaint focus:outline-none" />
+          class="w-full bg-transparent px-2 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none" />
       </div>
       <template x-for="tag in uniqueTags()" :key="tag">
         <button type="button" @click="activeTag = activeTag === tag ? null : tag"
-          class="tag-chip" :class="activeTag === tag ? 'tag-chip-active' : ''" x-text="tag"></button>
+          class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500 transition hover:bg-indigo-100 hover:text-indigo-700"
+          :class="activeTag === tag ? 'bg-indigo-100 text-indigo-700' : ''" x-text="tag"></button>
       </template>
     </div>
 
     <template x-if="filteredFound().length === 0">
-      <div class="panel px-4 py-8 text-center text-sm text-inkdim">
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-8 text-center text-sm text-slate-500">
         <template x-if="found.length === 0 && !finished()">No confirmed profiles yet.</template>
         <template x-if="found.length === 0 && finished()">No confirmed profiles found.</template>
         <template x-if="found.length > 0">No matches for the current filter.</template>
       </div>
     </template>
 
-    <ul x-show="filteredFound().length > 0" class="panel divide-y divide-line overflow-hidden">
+    <ul x-show="filteredFound().length > 0" class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-200 overflow-hidden">
       <template x-for="item in filteredFound()" :key="item.site_name">
         <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 text-sm">
           <div class="min-w-0 flex items-start gap-2">
-            <span class="text-inkfaint font-mono shrink-0">&gt;</span>
+            <span class="text-slate-400 shrink-0">&gt;</span>
             <div class="min-w-0">
               <a :href="item.url" target="_blank" rel="noopener"
-                class="font-mono font-medium text-signal hover:underline" x-text="item.site_name"></a>
-              <span x-show="item.ids && Object.keys(item.ids).length" class="block text-[11px] font-mono text-inkfaint mt-0.5 truncate"
+                class="font-medium text-indigo-600 hover:underline" x-text="item.site_name"></a>
+              <span x-show="item.ids && Object.keys(item.ids).length" class="block text-[11px] text-slate-400 mt-0.5 truncate"
                 x-text="Object.entries(item.ids || {}).map(([k, v]) => k + '=' + v).join('  ')"></span>
             </div>
           </div>
           <span class="flex flex-wrap gap-1 pl-5 sm:pl-0">
             <template x-for="tag in (item.tags || [])" :key="tag">
-              <span class="tag-chip" x-text="tag"></span>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500" x-text="tag"></span>
             </template>
           </span>
         </li>

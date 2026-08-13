@@ -4,47 +4,4 @@
 
 @layer base {
   [x-cloak] { display: none !important; }
-
-  ::selection {
-    background-color: theme("colors.signaldim");
-    color: theme("colors.signal");
-  }
-
-  input::placeholder {
-    color: theme("colors.inkfaint");
-  }
-}
-
-@layer components {
-  .panel {
-    @apply rounded-md border border-line bg-panel;
-  }
-
-  .eyebrow {
-    @apply font-mono text-[11px] uppercase tracking-[0.15em] text-inkdim;
-  }
-
-  .field-input {
-    @apply block w-full rounded-md border border-line bg-void px-3 py-2.5 text-sm font-mono text-ink placeholder:text-inkfaint transition focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal/40;
-  }
-
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-signal px-4 py-2.5 font-mono text-sm font-semibold uppercase tracking-wide text-void transition hover:bg-signal/90 focus:outline-none focus:ring-2 focus:ring-signal/50 focus:ring-offset-2 focus:ring-offset-void disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-line2 px-3 py-2 font-mono text-xs uppercase tracking-wide text-inkdim transition hover:border-inkdim hover:text-ink focus:outline-none focus:ring-2 focus:ring-signal/40;
-  }
-
-  .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-alert/40 px-3 py-2 font-mono text-xs uppercase tracking-wide text-alert transition hover:bg-alertdim focus:outline-none focus:ring-2 focus:ring-alert/40 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .tag-chip {
-    @apply inline-flex items-center rounded border border-line2 bg-panel2 px-2 py-0.5 font-mono text-[11px] leading-4 text-inkdim transition hover:border-signal/50 hover:text-signal;
-  }
-
-  .tag-chip-active {
-    @apply border-signal/60 bg-signaldim text-signal;
-  }
 }

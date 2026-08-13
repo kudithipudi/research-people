@@ -3,11 +3,11 @@
 {% block content %}
 <section class="max-w-2xl mx-auto">
   <div class="py-6 sm:py-10">
-    <p class="eyebrow">// osint · 2,500+ sites indexed</p>
-    <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+    <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">// osint · 2,500+ sites indexed</p>
+    <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
       Find every profile<br class="hidden sm:block" /> behind a username.
     </h2>
-    <p class="mt-3 text-sm text-inkdim leading-relaxed max-w-md">
+    <p class="mt-3 text-sm text-slate-600 leading-relaxed max-w-md">
       Checked against maigret's index of social networks, forums, code hosts and
       gaming platforms. Confirmed hits stream in live while the scan runs.
     </p>
@@ -15,14 +15,14 @@
 
   {% if active %}
   <a href="{{ prefix }}/scans/{{ active['id'] }}"
-    class="mb-6 flex items-center justify-between gap-3 rounded-md border border-amber/40 bg-amberdim px-4 py-3 text-sm hover:border-amber/70 transition">
+    class="mb-6 flex items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm hover:border-indigo-400 transition">
     <span class="flex items-center gap-2 min-w-0">
-      <span class="w-1.5 h-1.5 rounded-full bg-amber motion-safe:animate-blink shrink-0"></span>
-      <span class="text-amber font-mono text-xs uppercase tracking-wide">Scanning</span>
-      <span class="font-mono text-ink truncate">{{ active['username'] }}</span>
-      <span class="text-inkdim hidden sm:inline">is running right now</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 motion-safe:animate-blink shrink-0"></span>
+      <span class="text-indigo-700 text-xs font-semibold uppercase tracking-wide">Scanning</span>
+      <span class="text-slate-900 truncate">{{ active['username'] }}</span>
+      <span class="text-slate-500 hidden sm:inline">is running right now</span>
     </span>
-    <span class="font-mono text-xs text-amber shrink-0">view live →</span>
+    <span class="text-xs text-indigo-600 shrink-0">view live →</span>
   </a>
   {% endif %}
 
@@ -30,100 +30,100 @@
   <form method="post" action="{{ prefix }}/scan"
     x-data="{ username: '', submitting: false }"
     @submit="submitting = true"
-    class="panel p-6 space-y-5">
+    class="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-5">
     <div>
-      <label for="username" class="eyebrow block mb-1.5">Target username</label>
-      <div class="flex items-center rounded-md border border-line bg-void transition focus-within:border-signal focus-within:ring-1 focus-within:ring-signal/40">
-        <span class="pl-3 pr-1 font-mono text-sm text-signal select-none">$</span>
+      <label for="username" class="block text-sm font-medium text-slate-700 mb-1.5">Target username</label>
+      <div class="flex items-center rounded-lg border border-slate-300 bg-white transition focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500">
+        <span class="pl-3 pr-1 text-sm text-indigo-600 select-none">$</span>
         <input type="text" id="username" name="username" required minlength="2" maxlength="60"
           pattern="[A-Za-z0-9][A-Za-z0-9_.-]*" x-model="username" autofocus autocomplete="off"
           placeholder="johndoe"
-          class="flex-1 min-w-0 bg-transparent px-1.5 py-2.5 text-sm font-mono text-ink placeholder:text-inkfaint focus:outline-none" />
+          class="flex-1 min-w-0 bg-transparent px-1.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none" />
       </div>
       <p x-cloak x-show="username.length > 0 && !/^[A-Za-z0-9][A-Za-z0-9_.-]{1,59}$/.test(username)"
-        class="mt-1.5 text-[11px] font-mono text-alert">
+        class="mt-1.5 text-[11px] text-rose-600">
         2–60 characters — letters, numbers, <code>_</code> <code>.</code> <code>-</code>, starting with a letter or number.
       </p>
     </div>
 
     <div>
-      <span class="eyebrow block mb-1.5">Scope</span>
+      <span class="block text-sm font-medium text-slate-700 mb-1.5">Scope</span>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <label class="cursor-pointer">
           <input type="radio" name="scope" value="quick" class="peer sr-only" />
-          <div class="rounded-md border border-line bg-void px-3 py-2.5 transition peer-checked:border-signal peer-checked:bg-signaldim peer-focus-visible:ring-2 peer-focus-visible:ring-signal/50">
+          <div class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500">
             <div class="flex items-center justify-between">
-              <span class="font-mono text-xs uppercase tracking-wide text-ink">Quick</span>
-              <span class="font-mono text-[11px] text-inkdim">100</span>
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-900">Quick</span>
+              <span class="text-[11px] text-slate-400">100</span>
             </div>
-            <p class="mt-1 text-[11px] text-inkdim leading-snug">Fast pass, most popular sites.</p>
+            <p class="mt-1 text-[11px] text-slate-500 leading-snug">Fast pass, most popular sites.</p>
           </div>
         </label>
         <label class="cursor-pointer">
           <input type="radio" name="scope" value="standard" class="peer sr-only" checked />
-          <div class="rounded-md border border-line bg-void px-3 py-2.5 transition peer-checked:border-signal peer-checked:bg-signaldim peer-focus-visible:ring-2 peer-focus-visible:ring-signal/50">
+          <div class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500">
             <div class="flex items-center justify-between">
-              <span class="font-mono text-xs uppercase tracking-wide text-ink">Standard</span>
-              <span class="font-mono text-[11px] text-inkdim">500</span>
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-900">Standard</span>
+              <span class="text-[11px] text-slate-400">500</span>
             </div>
-            <p class="mt-1 text-[11px] text-inkdim leading-snug">Good default coverage.</p>
+            <p class="mt-1 text-[11px] text-slate-500 leading-snug">Good default coverage.</p>
           </div>
         </label>
         <label class="cursor-pointer">
           <input type="radio" name="scope" value="full" class="peer sr-only" />
-          <div class="rounded-md border border-line bg-void px-3 py-2.5 transition peer-checked:border-signal peer-checked:bg-signaldim peer-focus-visible:ring-2 peer-focus-visible:ring-signal/50">
+          <div class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500">
             <div class="flex items-center justify-between">
-              <span class="font-mono text-xs uppercase tracking-wide text-ink">Full</span>
-              <span class="font-mono text-[11px] text-inkdim">~2,500</span>
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-900">Full</span>
+              <span class="text-[11px] text-slate-400">~2,500</span>
             </div>
-            <p class="mt-1 text-[11px] text-inkdim leading-snug">Every enabled site. Slow.</p>
+            <p class="mt-1 text-[11px] text-slate-500 leading-snug">Every enabled site. Slow.</p>
           </div>
         </label>
       </div>
     </div>
 
-    <button type="submit" class="btn-primary w-full" :disabled="submitting">
+    <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" :disabled="submitting">
       <span x-show="!submitting">Run scan →</span>
       <span x-cloak x-show="submitting">Starting…</span>
     </button>
-    <p class="text-[11px] font-mono text-inkfaint text-center">
+    <p class="text-[11px] text-slate-400 text-center">
       one scan runs at a time · results are best-effort
     </p>
   </form>
   {% else %}
-  <div class="panel p-8 text-center">
-    <p class="text-sm text-inkdim mb-4">Triggering a scan requires the shared password.</p>
-    <a href="{{ prefix }}/login" class="btn-primary inline-flex">Log in to scan</a>
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-8 text-center">
+    <p class="text-sm text-slate-500 mb-4">Triggering a scan requires the shared password.</p>
+    <a href="{{ prefix }}/login" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Log in to scan</a>
   </div>
   {% endif %}
 </section>
 
 <section class="mt-12 max-w-2xl mx-auto">
-  <h3 class="eyebrow mb-3">Recent scans</h3>
+  <h3 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Recent scans</h3>
   {% if recent %}
-  <ul class="panel divide-y divide-line overflow-hidden">
+  <ul class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-200 overflow-hidden">
     {% for r in recent %}
     <li>
-      <a href="{{ prefix }}/scans/{{ r['id'] }}" class="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-panel2 transition">
+      <a href="{{ prefix }}/scans/{{ r['id'] }}" class="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-slate-50 transition">
         <span class="flex items-center gap-2 min-w-0">
-          <span class="text-inkfaint font-mono">&gt;</span>
-          <span class="font-mono font-medium text-ink truncate">{{ r["username"] }}</span>
-          <span class="hidden sm:inline font-mono text-[11px] uppercase tracking-wide text-inkfaint">{{ r["scope"] }}</span>
+          <span class="text-slate-400">&gt;</span>
+          <span class="font-medium text-slate-900 truncate">{{ r["username"] }}</span>
+          <span class="hidden sm:inline text-[11px] uppercase tracking-wide text-slate-400">{{ r["scope"] }}</span>
         </span>
         <span class="flex items-center gap-3 shrink-0">
-          <span class="hidden sm:inline font-mono text-[11px] text-inkfaint" data-ts="{{ r['created_at'] }}"></span>
-          <span class="text-[11px] px-2 py-0.5 rounded font-mono uppercase tracking-wide
-            {% if r['status'] == 'done' %}bg-signaldim text-signal
-            {% elif r['status'] in ('error', 'cancelled') %}bg-alertdim text-alert
-            {% else %}bg-amberdim text-amber{% endif %}">{{ r["status"] }}</span>
-          <span class="font-mono text-[11px] text-inkdim w-14 text-right">{{ r["found_count"] }} hits</span>
+          <span class="hidden sm:inline text-[11px] text-slate-400" data-ts="{{ r['created_at'] }}"></span>
+          <span class="text-[11px] px-2 py-0.5 rounded font-medium uppercase tracking-wide
+            {% if r['status'] == 'done' %}bg-indigo-100 text-indigo-700
+            {% elif r['status'] in ('error', 'cancelled') %}bg-rose-100 text-rose-700
+            {% else %}bg-slate-100 text-slate-600{% endif %}">{{ r["status"] }}</span>
+          <span class="text-[11px] text-slate-500 w-14 text-right">{{ r["found_count"] }} hits</span>
         </span>
       </a>
     </li>
     {% endfor %}
   </ul>
   {% else %}
-  <div class="panel px-4 py-8 text-center text-sm text-inkdim">
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-8 text-center text-sm text-slate-500">
     No scans yet{% if is_admin %} — run the first one above{% endif %}.
   </div>
   {% endif %}
