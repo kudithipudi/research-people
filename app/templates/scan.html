@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}{{ scan['username'] }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<script type="application/json" id="scan-state">{{ scan | tojson }}</script>
+<script>
+function scanWidget() {
+  const s = JSON.parse(document.getElementById("scan-state").textContent);
+  const FINISHED = ["done", "error", "cancelled"];
+  const parseIso = (iso) => new Date(iso.includes("Z") || iso.includes("+") ? iso : iso + "Z").getTime();
+
+  return {
+    id: s.id,
+    status: s.status,
+    processed: s.processed,
+    total: s.total,
+    found: s.found || [],
+    error: s.error || null,
+    createdAt: s.created_at,
+    completedAt: s.completed_at || null,
+    cancelling: false,
+    copied: false,
+    query: "",
+    activeTag: null,
+    now: Date.now(),
+    pollTimer: null,
+    tickTimer: null,
+
+    init() {
+      if (!this.finished()) {
+        this.pollTimer = setInterval(() => this.poll(), 1500);
+        this.tickTimer = setInterval(() => { this.now = Date.now(); }, 1000);
+      }
+    },
+    finished() {
+      return FINISHED.includes(this.status);
+    },
+    async poll() {
+      try {
+        const r = await fetch("{{ prefix }}/api/scans/" + this.id);
+        if (!r.ok) return;
+        const d = await r.json();
+        this.status = d.status;
+        this.processed = d.processed;
+        this.total = d.total;
+        if (d.found) this.found = d.found;
+        if (d.error) this.error = d.error;
+        if (d.completed_at) this.completedAt = d.completed_at;
+        if (d.finished) {
+          clearInterval(this.pollTimer);
+          clearInterval(this.tickTimer);
+        }
+      } catch (e) {}
+    },
+    async cancel() {
+      if (this.cancelling) return;
+      this.cancelling = true;
+      try {
+        await fetch("{{ prefix }}/scans/" + this.id + "/cancel", { method: "POST" });
+      } catch (e) {}
+    },
+    copyLink() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        this.copied = true;
+        setTimeout(() => { this.copied = false; }, 1500);
+      });
+    },
+    percent() {
+      return this.total ? Math.round((this.processed / this.total) * 100) : 0;
+    },
+    elapsedSeconds() {
+      const start = parseIso(this.createdAt);
+      const end = this.finished() && this.completedAt ? parseIso(this.completedAt) : this.now;
+      return Math.max(0, Math.floor((end - start) / 1000));
+    },
+    rate() {
+      const el = this.elapsedSeconds();
+      if (el < 2 || this.processed < 1) return null;
+      return (this.processed / el).toFixed(1);
+    },
+    eta() {
+      const r = this.rate();
+      if (r === null || r <= 0 || this.finished()) return null;
+      const remaining = this.total - this.processed;
+      if (remaining <= 0) return null;
+      return Math.round(remaining / r);
+    },
+    formatDuration(sec) {
+      if (sec === null) return "—";
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      const h = Math.floor(m / 60);
+      if (h > 0) return h + "h " + (m % 60) + "m";
+      if (m > 0) return m + "m " + s + "s";
+      return s + "s";
+    },
+    uniqueTags() {
+      const tags = new Set();
+      this.found.forEach((item) => (item.tags || []).forEach((t) => tags.add(t)));
+      return Array.from(tags).sort().slice(0, 14);
+    },
+    filteredFound() {
+      let list = this.found;
+      if (this.activeTag) list = list.filter((i) => (i.tags || []).includes(this.activeTag));
+      if (this.query.trim()) {
+        const q = this.query.trim().toLowerCase();
+        list = list.filter((i) => {
+          const idsStr = Object.keys(i.ids || {}).join(" ").toLowerCase();
+          const tagsStr = (i.tags || []).join(" ").toLowerCase();
+          return (i.site_name || "").toLowerCase().includes(q) || idsStr.includes(q) || tagsStr.includes(q);
+        });
+      }
+      return list;
+    },
+  };
+}
+</script>
+
+<section class="max-w-3xl mx-auto" x-data="scanWidget()" x-init="init()">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="min-w-0">
+      <p class="eyebrow mb-1">
+        <a href="{{ prefix }}/" class="hover:text-signal transition">← all scans</a>
+      </p>
+      <h2 class="text-2xl sm:text-3xl font-bold font-mono text-ink truncate">{{ scan['username'] }}</h2>
+      <p class="mt-1 font-mono text-xs text-inkdim">
+        {{ scan['scope'] }} scope · <span x-text="total"></span> sites · scan #{{ scan['id'] }} ·
+        <span data-ts="{{ scan['created_at'] }}"></span>
+      </p>
+    </div>
+    <span class="text-[11px] px-2.5 py-1 rounded font-mono uppercase tracking-wide shrink-0"
+      :class="{
+        'bg-signaldim text-signal': status === 'done',
+        'bg-alertdim text-alert': status === 'error' || status === 'cancelled',
+        'bg-amberdim text-amber': status === 'running' || status === 'queued'
+      }" x-text="status"></span>
+  </div>
+
+  <div x-cloak x-show="status === 'error' || status === 'cancelled'"
+    class="mt-4 rounded-md border border-alert/40 bg-alertdim px-4 py-3 text-sm font-mono text-alert">
+    <span x-show="status === 'error'">scan failed — <span x-text="error"></span></span>
+    <span x-show="status === 'cancelled'">scan cancelled by operator.</span>
+  </div>
+
+  <div x-cloak x-show="!finished()" class="mt-6 panel p-5">
+    <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+      <span class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber motion-safe:animate-blink"></span>
+        <span class="font-mono text-xs uppercase tracking-wide text-amber"
+          x-text="cancelling ? 'cancelling…' : 'scanning…'"></span>
+      </span>
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-inkdim">
+          <span x-text="processed"></span>/<span x-text="total"></span> ·
+          <span x-text="percent() + '%'"></span>
+        </span>
+        {% if is_admin %}
+        <button type="button" @click="cancel()" :disabled="cancelling" class="btn-danger">
+          <span x-show="!cancelling">Cancel</span>
+          <span x-cloak x-show="cancelling">Cancelling…</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="relative h-2 rounded-full bg-panel2 overflow-hidden">
+      <div class="h-full bg-signal transition-all duration-500" :style="'width:' + percent() + '%'"></div>
+      <div class="absolute inset-y-0 w-1/6 bg-gradient-to-r from-transparent via-signal/70 to-transparent motion-safe:animate-sweep"></div>
+    </div>
+
+    <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[11px] text-inkdim">
+      <span>elapsed <span class="text-ink" x-text="formatDuration(elapsedSeconds())"></span></span>
+      <span x-show="eta() !== null">eta <span class="text-ink" x-text="formatDuration(eta())"></span></span>
+      <span x-show="rate() !== null"><span class="text-ink" x-text="rate()"></span> sites/s</span>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h3 class="eyebrow">Found profiles (<span x-text="found.length"></span>)</h3>
+      <div class="flex items-center gap-2">
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.json" class="btn-ghost">Export JSON</a>
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.csv" class="btn-ghost">Export CSV</a>
+        <button type="button" @click="copyLink()" class="btn-ghost" x-text="copied ? 'Copied' : 'Copy link'"></button>
+      </div>
+    </div>
+
+    <div x-show="found.length > 0" x-cloak class="mb-3 flex flex-wrap items-center gap-2">
+      <div class="flex items-center rounded-md border border-line bg-void px-2 flex-1 min-w-[160px] max-w-xs">
+        <span class="font-mono text-inkfaint text-xs">/</span>
+        <input type="text" x-model="query" placeholder="filter site, tag, id…"
+          class="w-full bg-transparent px-2 py-1.5 text-xs font-mono text-ink placeholder:text-inkfaint focus:outline-none" />
+      </div>
+      <template x-for="tag in uniqueTags()" :key="tag">
+        <button type="button" @click="activeTag = activeTag === tag ? null : tag"
+          class="tag-chip" :class="activeTag === tag ? 'tag-chip-active' : ''" x-text="tag"></button>
+      </template>
+    </div>
+
+    <template x-if="filteredFound().length === 0">
+      <div class="panel px-4 py-8 text-center text-sm text-inkdim">
+        <template x-if="found.length === 0 && !finished()">No confirmed profiles yet.</template>
+        <template x-if="found.length === 0 && finished()">No confirmed profiles found.</template>
+        <template x-if="found.length > 0">No matches for the current filter.</template>
+      </div>
+    </template>
+
+    <ul x-show="filteredFound().length > 0" class="panel divide-y divide-line overflow-hidden">
+      <template x-for="item in filteredFound()" :key="item.site_name">
+        <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 text-sm">
+          <div class="min-w-0 flex items-start gap-2">
+            <span class="text-inkfaint font-mono shrink-0">&gt;</span>
+            <div class="min-w-0">
+              <a :href="item.url" target="_blank" rel="noopener"
+                class="font-mono font-medium text-signal hover:underline" x-text="item.site_name"></a>
+              <span x-show="item.ids && Object.keys(item.ids).length" class="block text-[11px] font-mono text-inkfaint mt-0.5 truncate"
+                x-text="Object.entries(item.ids || {}).map(([k, v]) => k + '=' + v).join('  ')"></span>
+            </div>
+          </div>
+          <span class="flex flex-wrap gap-1 pl-5 sm:pl-0">
+            <template x-for="tag in (item.tags || [])" :key="tag">
+              <span class="tag-chip" x-text="tag"></span>
+            </template>
+          </span>
+        </li>
+      </template>
+    </ul>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Login — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="max-w-sm mx-auto mt-8">
+  <div class="panel p-6">
+    <p class="eyebrow mb-1">// authenticate</p>
+    <h2 class="text-xl font-bold text-ink mb-1">Log in to scan</h2>
+    <p class="text-sm text-inkdim mb-6">Runs against thousands of external sites — sign in to start one.</p>
+
+    {% if error %}
+    <p class="mb-4 rounded-md border border-alert/40 bg-alertdim px-3 py-2 text-sm font-mono text-alert">
+      Wrong password, try again.
+    </p>
+    {% endif %}
+
+    <form method="post" action="{{ prefix }}/login" class="space-y-4">
+      <div>
+        <label for="password" class="eyebrow block mb-1.5">Shared password</label>
+        <div class="flex items-center rounded-md border border-line bg-void transition focus-within:border-signal focus-within:ring-1 focus-within:ring-signal/40">
+          <span class="pl-3 pr-1 font-mono text-sm text-signal select-none">$</span>
+          <input type="password" id="password" name="password" required autofocus autocomplete="current-password"
+            class="flex-1 min-w-0 bg-transparent px-1.5 py-2.5 text-sm font-mono text-ink placeholder:text-inkfaint focus:outline-none" />
+        </div>
+      </div>
+      <button type="submit" class="btn-primary w-full">Log in →</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
