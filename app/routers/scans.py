@@ -7,15 +7,29 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import get_settings
-from app.db import utc_now
+from app.db import check_and_record_rate_limit, utc_now
 from app.routers.auth import is_admin
 from app.services import scanner
 
 router = APIRouter()
 
+# Stricter than the lab default: one maigret scan hits hundreds of sites.
+SCAN_RATE_LIMIT = 5
+SCAN_RATE_LIMIT_WINDOW_SECONDS = 60
+
 
 def _login_redirect(request: Request) -> RedirectResponse:
     return RedirectResponse(f"{get_settings().root_path}/login", status_code=303)
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip
+    return request.client.host if request.client else "unknown"
 
 
 async def _fetch_scan_row(request: Request, scan_id: int):
@@ -32,6 +46,20 @@ async def _fetch_scan_row(request: Request, scan_id: int):
 async def create_scan(request: Request):
     if not is_admin(request):
         return _login_redirect(request)
+
+    db = request.app.state.db
+    allowed = await check_and_record_rate_limit(
+        db,
+        ip=_client_ip(request),
+        route="scan",
+        limit=SCAN_RATE_LIMIT,
+        window_seconds=SCAN_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests — please slow down and try again in a minute.",
+        )
 
     form = await request.form()
     username = (form.get("username") or "").strip()
@@ -50,7 +78,6 @@ async def create_scan(request: Request):
         )
 
     site_count = len(scanner.select_sites(scope))
-    db = request.app.state.db
     cur = await db.execute(
         "INSERT INTO scans (username, id_type, scope, site_count, status, created_at) "
         "VALUES (?, 'username', ?, ?, 'queued', ?)",

@@ -2,6 +2,7 @@ import asyncio
 
 from maigret.result import MaigretCheckResult, MaigretCheckStatus
 
+import app.routers.scans as scans_module
 from app.main import app
 
 
@@ -128,6 +129,21 @@ async def test_export_json_and_csv(logged_in, monkeypatch):
     r = await logged_in.get(f"/scans/{scan_id}/export.csv")
     assert r.status_code == 200
     assert r.text.startswith("site_name,url,tags,extracted_ids")
+
+
+async def test_scan_rate_limited(logged_in, monkeypatch):
+    monkeypatch.setattr(scans_module, "SCAN_RATE_LIMIT", 2)
+    monkeypatch.setattr("app.services.scanner.search", fake_search)
+
+    for i in range(2):
+        resp = await logged_in.post("/scan", data={"username": f"rl{i}", "scope": "quick"})
+        assert resp.status_code == 303
+        scan_id = int(resp.headers["location"].rstrip("/").split("/")[-1])
+        await _wait_until_done(logged_in, scan_id)
+        app.state.current_scan = None
+
+    resp = await logged_in.post("/scan", data={"username": "rl2", "scope": "quick"})
+    assert resp.status_code == 429
 
 
 async def test_healthz(client):

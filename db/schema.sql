@@ -16,3 +16,12 @@ CREATE TABLE IF NOT EXISTS scans (
 );
 
 CREATE INDEX IF NOT EXISTS idx_scans_created_at ON scans (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+    ip         TEXT NOT NULL,
+    route      TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_route_ip_time
+    ON rate_limit_hits (route, ip, created_at);

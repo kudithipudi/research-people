@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     tor_proxy_url: str = ""
     i2p_proxy_url: str = ""
 
+    # Per-IP rate limit on POST /scan (standards §10).
+    rate_limit_per_minute: int = 20
+    rate_limit_window_seconds: int = 60
+
 
 @lru_cache
 def get_settings() -> Settings:
