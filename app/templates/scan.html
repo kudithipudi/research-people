@@ -22,11 +22,20 @@ function scanWidget() {
     copied: false,
     query: "",
     activeTag: null,
+    shown: 200,
     now: Date.now(),
     pollTimer: null,
     tickTimer: null,
 
     init() {
+      const params = new URLSearchParams(window.location.search);
+      this.query = params.get("q") || "";
+      const tag = params.get("tag");
+      if (tag && this.found.some((item) => (item.tags || []).includes(tag))) {
+        this.activeTag = tag;
+      }
+      this.$watch("query", () => { this.resetShown(); this.syncUrl(); });
+      this.$watch("activeTag", () => { this.resetShown(); this.syncUrl(); });
       if (!this.finished()) {
         this.pollTimer = setInterval(() => this.poll(), 1500);
         this.tickTimer = setInterval(() => { this.now = Date.now(); }, 1000);
@@ -54,6 +63,7 @@ function scanWidget() {
     },
     async cancel() {
       if (this.cancelling) return;
+      if (!confirm("Cancel this scan?")) return;
       this.cancelling = true;
       try {
         await fetch("{{ prefix }}/scans/" + this.id + "/cancel", { method: "POST" });
@@ -64,6 +74,20 @@ function scanWidget() {
         this.copied = true;
         setTimeout(() => { this.copied = false; }, 1500);
       });
+    },
+    syncUrl() {
+      const url = new URL(window.location.href);
+      if (this.query.trim()) url.searchParams.set("q", this.query.trim());
+      else url.searchParams.delete("q");
+      if (this.activeTag) url.searchParams.set("tag", this.activeTag);
+      else url.searchParams.delete("tag");
+      window.history.replaceState(null, "", url);
+    },
+    resetShown() {
+      this.shown = 200;
+    },
+    showMore() {
+      this.shown += 200;
     },
     percent() {
       return this.total ? Math.round((this.processed / this.total) * 100) : 0;
@@ -87,12 +111,14 @@ function scanWidget() {
     },
     formatDuration(sec) {
       if (sec === null) return "—";
-      const m = Math.floor(sec / 60);
+      const fmt = (n, unit) =>
+        new Intl.NumberFormat(navigator.languages, { style: "unit", unit, unitDisplay: "short" }).format(n);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
       const s = sec % 60;
-      const h = Math.floor(m / 60);
-      if (h > 0) return h + "h " + (m % 60) + "m";
-      if (m > 0) return m + "m " + s + "s";
-      return s + "s";
+      if (h > 0) return fmt(h, "hour") + " " + fmt(m, "minute");
+      if (m > 0) return fmt(m, "minute") + " " + fmt(s, "second");
+      return fmt(s, "second");
     },
     uniqueTags() {
       const tags = new Set();
@@ -112,6 +138,9 @@ function scanWidget() {
       }
       return list;
     },
+    visibleResults() {
+      return this.filteredFound().slice(0, this.shown);
+    },
   };
 }
 </script>
@@ -120,9 +149,9 @@ function scanWidget() {
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="min-w-0">
       <p class="text-sm text-slate-500 mb-1">
-        <a href="{{ prefix }}/" class="hover:text-indigo-600 transition">← all scans</a>
+        <a href="{{ prefix }}/" class="hover:text-indigo-600 transition rounded focus-visible:ring-2 focus-visible:ring-indigo-500">← all scans</a>
       </p>
-      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 truncate">{{ scan['username'] }}</h2>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 truncate">{{ scan['username'] }}</h1>
       <p class="mt-1 text-xs text-slate-500">
         {{ scan['scope'] }} scope · <span x-text="total"></span> sites · scan #{{ scan['id'] }} ·
         <span data-ts="{{ scan['created_at'] }}"></span>
@@ -136,9 +165,9 @@ function scanWidget() {
       }" x-text="status"></span>
   </div>
 
-  <div x-cloak x-show="status === 'error' || status === 'cancelled'"
+  <div x-cloak x-show="status === 'error' || status === 'cancelled'" aria-live="polite"
     class="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-    <span x-show="status === 'error'">scan failed — <span x-text="error"></span></span>
+    <span x-show="status === 'error'">scan failed — <span x-text="error"></span> — try a smaller scope or re-run.</span>
     <span x-show="status === 'cancelled'">scan cancelled by operator.</span>
   </div>
 
@@ -150,12 +179,12 @@ function scanWidget() {
           x-text="cancelling ? 'cancelling…' : 'scanning…'"></span>
       </span>
       <div class="flex items-center gap-3">
-        <span class="text-xs text-slate-500">
+        <span class="text-xs text-slate-500 tabular-nums">
           <span x-text="processed"></span>/<span x-text="total"></span> ·
           <span x-text="percent() + '%'"></span>
         </span>
         {% if is_admin %}
-        <button type="button" @click="cancel()" :disabled="cancelling" class="rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="button" @click="cancel()" :disabled="cancelling" class="rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
           <span x-show="!cancelling">Cancel</span>
           <span x-cloak x-show="cancelling">Cancelling…</span>
         </button>
@@ -164,14 +193,14 @@ function scanWidget() {
     </div>
 
     <div class="relative h-2 rounded-full bg-slate-100 overflow-hidden">
-      <div class="h-full bg-indigo-600 transition-all duration-500" :style="'width:' + percent() + '%'"></div>
+      <div class="h-full w-full bg-indigo-600 origin-left transition-transform duration-500" :style="'transform: scaleX(' + percent() / 100 + ')'"></div>
       <div class="absolute inset-y-0 w-1/6 bg-gradient-to-r from-transparent via-indigo-400/70 to-transparent motion-safe:animate-sweep"></div>
     </div>
 
     <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-slate-500">
-      <span>elapsed <span class="text-slate-900" x-text="formatDuration(elapsedSeconds())"></span></span>
-      <span x-show="eta() !== null">eta <span class="text-slate-900" x-text="formatDuration(eta())"></span></span>
-      <span x-show="rate() !== null"><span class="text-slate-900" x-text="rate()"></span> sites/s</span>
+      <span>elapsed <span class="text-slate-900 tabular-nums" x-text="formatDuration(elapsedSeconds())"></span></span>
+      <span x-show="eta() !== null">eta <span class="text-slate-900 tabular-nums" x-text="formatDuration(eta())"></span></span>
+      <span x-show="rate() !== null"><span class="text-slate-900 tabular-nums" x-text="rate()"></span> sites/s</span>
     </div>
   </div>
 
@@ -179,21 +208,21 @@ function scanWidget() {
     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
       <h3 class="text-xs font-semibold uppercase tracking-widest text-slate-500">Found profiles (<span x-text="found.length"></span>)</h3>
       <div class="flex items-center gap-2">
-        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.json" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Export JSON</a>
-        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.csv" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Export CSV</a>
-        <button type="button" @click="copyLink()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600" x-text="copied ? 'Copied' : 'Copy link'"></button>
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.json" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500">Export JSON</a>
+        <a href="{{ prefix }}/scans/{{ scan['id'] }}/export.csv" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500">Export CSV</a>
+        <button type="button" @click="copyLink()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500" x-text="copied ? 'Copied' : 'Copy link'"></button>
       </div>
     </div>
 
     <div x-show="found.length > 0" x-cloak class="mb-3 flex flex-wrap items-center gap-2">
-      <div class="flex items-center rounded-lg border border-slate-300 bg-white px-2 flex-1 min-w-[160px] max-w-xs">
+      <div class="flex items-center rounded-lg border border-slate-300 bg-white px-2 flex-1 min-w-[160px] max-w-xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500">
         <span class="text-slate-400 text-xs">/</span>
-        <input type="text" x-model="query" placeholder="filter site, tag, id…"
+        <input type="text" x-model="query" placeholder="filter site, tag, id…" aria-label="Filter results"
           class="w-full bg-transparent px-2 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none" />
       </div>
       <template x-for="tag in uniqueTags()" :key="tag">
         <button type="button" @click="activeTag = activeTag === tag ? null : tag"
-          class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500 transition hover:bg-indigo-100 hover:text-indigo-700"
+          class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500 transition hover:bg-indigo-100 hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500"
           :class="activeTag === tag ? 'bg-indigo-100 text-indigo-700' : ''" x-text="tag"></button>
       </template>
     </div>
@@ -207,7 +236,7 @@ function scanWidget() {
     </template>
 
     <ul x-show="filteredFound().length > 0" class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-200 overflow-hidden">
-      <template x-for="item in filteredFound()" :key="item.site_name">
+      <template x-for="item in visibleResults()" :key="item.site_name">
         <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 text-sm">
           <div class="min-w-0 flex items-start gap-2">
             <span class="text-slate-400 shrink-0">&gt;</span>
@@ -226,6 +255,10 @@ function scanWidget() {
         </li>
       </template>
     </ul>
+
+    <button type="button" x-show="filteredFound().length > shown" @click="showMore()"
+      class="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500"
+      x-text="'Show more (' + (filteredFound().length - shown) + ')'"></button>
   </div>
 </section>
 {% endblock %}

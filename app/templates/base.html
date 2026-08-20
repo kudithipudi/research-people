@@ -3,23 +3,30 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f8fafc" />
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
 <link rel="icon" href="/favicon.ico" />
 <link rel="stylesheet" href="{{ prefix }}/static/css/app.css" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<style>
+  button, a { touch-action: manipulation; }
+  button:not(:disabled):active, a:active { transform: scale(.99); }
+</style>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"
   integrity="sha384-X9kJyAubVxnP0hcA+AMMs21U445qsnqhnUF8EBlEpP3a42Kh/JwWjlv2ZcvGfphb"
   crossorigin="anonymous"></script>
 <script>
+  const relativeTime = new Intl.RelativeTimeFormat(navigator.languages, { numeric: "auto" });
   function timeAgo(iso) {
     const then = new Date(iso.includes("Z") || iso.includes("+") ? iso : iso + "Z").getTime();
     const s = Math.max(0, Math.floor((Date.now() - then) / 1000));
     if (s < 5) return "just now";
-    if (s < 60) return s + "s ago";
+    if (s < 60) return relativeTime.format(-s, "second");
     const m = Math.floor(s / 60);
-    if (m < 60) return m + "m ago";
+    if (m < 60) return relativeTime.format(-m, "minute");
     const h = Math.floor(m / 60);
-    if (h < 24) return h + "h ago";
-    return Math.floor(h / 24) + "d ago";
+    if (h < 24) return relativeTime.format(-h, "hour");
+    return relativeTime.format(-Math.floor(h / 24), "day");
   }
   function refreshTimestamps() {
     document.querySelectorAll("[data-ts]").forEach((el) => {
@@ -33,6 +40,7 @@
 </script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
+<a href="#main" class="sr-only focus:not-sr-only">Skip to content</a>
 <div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
 
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
@@ -52,10 +60,10 @@
       <div class="flex items-center gap-2 shrink-0">
         {% if request.session.get('is_admin') %}
         <form method="post" action="{{ prefix }}/logout">
-          <button type="submit" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Log out</button>
+          <button type="submit" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500">Log out</button>
         </form>
         {% else %}
-        <a href="{{ prefix }}/login" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600">Log in</a>
+        <a href="{{ prefix }}/login" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-500 hover:text-indigo-600 focus-visible:ring-2 focus-visible:ring-indigo-500">Log in</a>
         {% endif %}
         <a href="https://lab.kudithipudi.org/" class="hidden lg:inline-flex items-center text-sm text-slate-500 hover:text-slate-900 transition ml-1">
           <span aria-hidden="true" class="mr-1">&larr;</span> lab.kudithipudi.org
@@ -64,7 +72,7 @@
     </div>
   </header>
 
-  <main class="flex-1 max-w-[1100px] mx-auto w-full px-4 sm:px-6 py-8 space-y-8">
+  <main id="main" class="flex-1 max-w-[1100px] mx-auto w-full px-4 sm:px-6 py-8 space-y-8">
     {% block content %}{% endblock %}
   </main>
 
@@ -75,5 +83,11 @@
     </div>
   </footer>
 </div>
+<script>
+  if (window.matchMedia("(pointer: coarse)").matches === false) {
+    const el = document.querySelector("[data-autofocus]");
+    if (el) el.focus();
+  }
+</script>
 </body>
 </html>
